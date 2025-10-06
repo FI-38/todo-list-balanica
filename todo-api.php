@@ -51,7 +51,19 @@ switch ($_SERVER['REQUEST_METHOD']) {
     case 'PUT':
         // Placeholder for updating a TODO
         break;
-    case 'DELETE':
-        // Placeholder for deleting a TODO
-        break;
+    case "DELETE":
+    // Get data from the input stream.
+    $data = json_decode(file_get_contents('php://input'), true);
+    // Filter Todo to delete from the list.
+    $todos = array_values(
+        array_filter($todos,
+            function($todo) use ($data) {
+                return $todo['id'] !== $data['id'];
+    }));
+    // Write the Todos back to JSON file.
+    file_put_contents('todo.json', json_encode($todos));
+    // Tell the client the success of the operation.
+    echo json_encode(['status' => 'success']);
+    write_log("DELETE", $data);
+    break;
 }

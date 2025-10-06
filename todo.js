@@ -46,7 +46,27 @@ document.getElementById('todoForm').addEventListener('submit', function (e) {
         }
     });
 });
-
+const getDeleteButton = (item) => {
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Löschen';
+ 
+    // Handle delete button click
+    deleteButton.addEventListener('click', function() {
+        fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: item.id })
+        })
+        .then(response => response.json())
+        .then(() => {
+            fetchTodos(); // Reload todo list
+        });
+    });
+ 
+    return deleteButton;
+}
 // fetch all todos and present it in a HTML list
 function fetchTodos() {
     fetch(apiUrl)
@@ -57,6 +77,7 @@ function fetchTodos() {
             todos.forEach(todo => {
                 const li = document.createElement('li');
                 li.textContent = todo.title;
+                li.appendChild(getDeleteButton(todo));
                 todoList.appendChild(li);
             });
         });
