@@ -1,94 +1,68 @@
 console.log("todo.js loaded");
 
-// (1) / (2) – versión que usa todo-api.php
+const apiUrl = 'todo-api.php';
+const messageDiv = document.getElementById('message');
+
+const showMessage = (message) => {
+    // Show error message
+    messageDiv.textContent = message;
+    messageDiv.style.visibility = 'visible';
+
+    // Hide message after 3 seconds
+    setTimeout(() => {
+        messageDiv.style.visibility = 'hidden';
+    }, 3000);
+};
+
 document.getElementById('todoForm').addEventListener('submit', function (e) {
-  e.preventDefault();
 
-  const todoInput = document.getElementById('todoInput').value.trim();
-  if (!todoInput) return;
+    e.preventDefault();
 
-  fetch('todo-api.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ todo: todoInput }),
-  })
-    .then(r => r.json())
-    .then((data) => {
-      console.log('POST result:', data);
-      document.getElementById('todoInput').value = '';
-      fetchTodos(); // refrescar lista tras crear
+    const todoInput = document.getElementById('todoInput').value;
+
+    // Input validation: check if todo is empty or only whitespace
+    if (!todoInput || todoInput.trim() === '') {
+        showMessage('Bitte geben Sie einen Namen für das TODO an! (Client-Validierung)');
+
+        // Stop execution if validation fails
+        return;
+    }
+
+    fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ todo: todoInput }),
     })
-    .catch(err => console.error(err));
+    .then(response => response.json())
+    .then((data) => {
+        // Handle backend validation errors
+        if (data.status === 'error') {
+            showMessage(data.message);
+        } else {
+            fetchTodos();
+            document.getElementById('todoInput').value = '';
+        }
+    });
 });
 
-// (3) – leer todos y pintarlos como <li>
+// fetch all todos and present it in a HTML list
 function fetchTodos() {
-  fetch('todo-api.php') // GET por defecto
-    .then(response => response.json())
-    .then(todos => {
-      const todoList = document.getElementById('todoList');
-      todoList.innerHTML = '';
-      todos.forEach((text, index) => {
-        const li = document.createElement('li');
-
-        const span = document.createElement('span');
-        span.className = 'todo-text';
-        span.textContent = text;
-
-        const editBtn = document.createElement('button');
-        editBtn.className = 'small';
-        editBtn.textContent = 'Editar';
-        editBtn.addEventListener('click', () => {
-          const neu = prompt('Nuevo texto:', text);
-          if (neu !== null) updateTodo(index, neu.trim());
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(todos => {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.textContent = todo.title;
+                todoList.appendChild(li);
+            });
         });
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'small';
-        delBtn.textContent = 'Borrar';
-        delBtn.addEventListener('click', () => {
-          if (confirm('¿Eliminar este TODO?')) deleteTodo(index);
-        });
-
-        li.appendChild(span);
-        li.appendChild(editBtn);
-        li.appendChild(delBtn);
-        todoList.appendChild(li);
-      });
-    })
-    .catch(err => console.error(err));
 }
 
-// PUT – actualizar un TODO por índice
-function updateTodo(index, newText) {
-  if (!newText) return;
-  fetch('todo-api.php', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ index, todo: newText }),
-  })
-    .then(r => r.json())
-    .then(data => {
-      console.log('PUT result:', data);
-      fetchTodos();
-    })
-    .catch(err => console.error(err));
-}
-
-// DELETE – borrar un TODO por índice
-function deleteTodo(index) {
-  fetch('todo-api.php', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ index }),
-  })
-    .then(r => r.json())
-    .then(data => {
-      console.log('DELETE result:', data);
-      fetchTodos();
-    })
-    .catch(err => console.error(err));
-}
-
-// (4) – carga inicial
-window.addEventListener('load', () => fetchTodos());
+// initial loading of todo list
+window.addEventListener("load", (event) => {
+    fetchTodos();
+});
