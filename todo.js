@@ -46,6 +46,28 @@ document.getElementById('todoForm').addEventListener('submit', function (e) {
         }
     });
 });
+const getCompleteButton = (item) => {
+    const completeButton = document.createElement('button');
+    completeButton.textContent = item.completed ? 'Unvollständig' : 'Abgeschlossen';
+
+    // Handle complete button click
+    completeButton.addEventListener('click', function() {
+        fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: item.id, completed: !item.completed })
+        })
+        .then(response => response.json())
+        .then(() => {
+            fetchTodos(); // Reload todo list
+        }); 
+
+    });
+    // Return the complete button so it can be appended to the DOM
+    return completeButton;
+};
 const getDeleteButton = (item) => {
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Löschen';
@@ -66,7 +88,7 @@ const getDeleteButton = (item) => {
     });
  
     return deleteButton;
-}
+};
 // fetch all todos and present it in a HTML list
 function fetchTodos() {
     fetch(apiUrl)
@@ -78,6 +100,7 @@ function fetchTodos() {
                 const li = document.createElement('li');
                 li.textContent = todo.title;
                 li.appendChild(getDeleteButton(todo));
+                li.appendChild(getCompleteButton(todo));
                 todoList.appendChild(li);
             });
         });

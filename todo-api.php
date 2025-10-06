@@ -42,14 +42,43 @@ switch ($_SERVER['REQUEST_METHOD']) {
             break;
         }
 
-        $new_todo = ["id" => uniqid(), "title" => $input['todo']];
+        $new_todo = ["id" => uniqid(), "title" => $input['todo'], "completed" => false];
         $todos[] = $new_todo;
         file_put_contents($file, json_encode($todos));
         echo json_encode(['status' => 'success']);
         write_log('POST', $input['todo']);
         break;
     case 'PUT':
-        // Placeholder for updating a TODO
+        // Update a todo (toggle completed)
+        $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data || !isset($data['id'])) {
+            http_response_code(400);
+            echo json_encode(['status' => 'error', 'message' => 'ID fehlt für Update']);
+            write_log('PUT_ERROR', 'Missing id');
+            break;
+        }
+        $updated = false;
+        foreach ($todos as &$todo) {
+            if (isset($todo['id']) && $todo['id'] === $data['id']) {
+                // Use provided 'completed' value if present, otherwise set true
+                if (isset($data['completed'])) {
+                    $todo['completed'] = (bool)$data['completed'];
+                } else {
+                    $todo['completed'] = true;
+                }
+                $updated = true;
+                break;
+            }
+        }
+        if ($updated) {
+            file_put_contents($file, json_encode(array_values($todos)));
+            echo json_encode(['status' => 'success']);
+            write_log('PUT', $data);
+        } else {
+            http_response_code(404);
+            echo json_encode(['status' => 'error', 'message' => 'Todo nicht gefunden']);
+            write_log('PUT_ERROR', 'Not found: ' . $data['id']);
+        }
         break;
     case "DELETE":
     // Get data from the input stream.
