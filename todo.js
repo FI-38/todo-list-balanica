@@ -68,6 +68,20 @@ const getCompleteButton = (item) => {
     // Return the complete button so it can be appended to the DOM
     return completeButton;
 };
+const getEditButton = (item) => {
+    const editButton = document.createElement('button');
+    editButton.textContent = 'Bearbeiten';
+
+    // Cuando se hace clic, mostrar el formulario oculto con los datos del Todo
+    editButton.addEventListener('click', () => {
+        document.getElementById('todo-update-form').style.display = 'block';
+        document.getElementById('todo-id').value = item.id;
+        document.getElementById('todo-update-input').value = item.title;
+    });
+
+    return editButton;
+};
+
 const getDeleteButton = (item) => {
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Löschen';
@@ -101,10 +115,36 @@ function fetchTodos() {
                 li.textContent = todo.title;
                 li.appendChild(getDeleteButton(todo));
                 li.appendChild(getCompleteButton(todo));
+                li.appendChild(getEditButton(todo));
+
                 todoList.appendChild(li);
             });
         });
 }
+// Formular für das Bearbeiten von Todos
+document.getElementById('todo-update-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('todo-id').value;
+    const title = document.getElementById('todo-update-input').value;
+
+    // Validar que el nuevo título no esté vacío
+    if (!title || title.trim() === '') {
+        showMessage('Bitte geben Sie einen neuen Titel ein!');
+        return;
+    }
+
+    fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, title })
+    })
+    .then(response => response.json())
+    .then(() => {
+        fetchTodos(); // recargar lista
+        document.getElementById('todo-update-form').style.display = 'none';
+    });
+});
 
 // initial loading of todo list
 window.addEventListener("load", (event) => {
